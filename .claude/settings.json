@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx *)",
+      "Bash(yarn *)",
+      "Bash(mkdir *)",
+      "Bash(rm -rf node_modules*)",
+      "Bash(rm -f package-lock.json)"
+    ]
+  }
+}
