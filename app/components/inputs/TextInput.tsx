@@ -1,8 +1,8 @@
 'use client'
 
 import { useRef } from 'react'
-import Button from '@/src/components/buttons/Button'
-import en from '@/src/messages/en.json'
+import Button from '@/app/components/buttons/Button'
+import en from '@/app/messages/en.json'
 
 export interface TextInputProps {
   value: string

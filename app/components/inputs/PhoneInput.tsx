@@ -1,7 +1,7 @@
 'use client'
 
-import Button from '@/src/components/buttons/Button'
-import en from '@/src/messages/en.json'
+import Button from '@/app/components/buttons/Button'
+import en from '@/app/messages/en.json'
 
 export interface PhoneInputProps {
   value: string

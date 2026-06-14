@@ -1,7 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import OptionButton from '@/src/components/inputs/OptionButton'
+import OptionButton from '@/app/components/inputs/OptionButton'
 
 export interface OptionButtonGroupProps {
   options: Array<{ label: string; value: string }>
@@ -14,29 +13,15 @@ export interface OptionButtonGroupProps {
 export default function OptionButtonGroup({
   options,
   onSelect,
-  selected: controlledSelected,
-  disabled: controlledDisabled = false,
+  selected,
+  disabled = false,
   ariaLabel = 'Options',
 }: OptionButtonGroupProps) {
-  const [internalSelected, setInternalSelected] = useState<string | undefined>(
-    controlledSelected
-  )
-  const [isSubmitted, setIsSubmitted] = useState(false)
-
-  const selected = controlledSelected ?? internalSelected
-  const disabled = controlledDisabled || isSubmitted
   const isOdd = options.length % 2 !== 0
-
-  const handleSelect = (value: string) => {
-    if (disabled) return
-    setInternalSelected(value)
-    setIsSubmitted(true)
-    onSelect(value)
-  }
 
   return (
     <div
-      role="group"
+      role="radiogroup"
       aria-label={ariaLabel}
       className="grid grid-cols-1 sm:grid-cols-2 gap-3"
     >
@@ -47,9 +32,9 @@ export default function OptionButtonGroup({
             <OptionButton
               label={opt.label}
               value={opt.value}
-              onSelect={handleSelect}
+              onSelect={onSelect}
               selected={selected === opt.value}
-              disabled={disabled && selected !== opt.value}
+              disabled={disabled}
             />
           </div>
         )

@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import Button from '@/src/components/buttons/Button'
+import Button from '@/app/components/buttons/Button'
 
 export interface OTPInputProps {
   length?: number

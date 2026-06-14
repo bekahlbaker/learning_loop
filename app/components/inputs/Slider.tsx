@@ -1,7 +1,6 @@
 'use client'
 
-import Button from '@/src/components/buttons/Button'
-import en from '@/src/messages/en.json'
+import Button from '@/app/components/buttons/Button'
 
 export interface SliderProps {
   min: number
@@ -9,7 +8,6 @@ export interface SliderProps {
   step: number
   value: number
   onChange: (value: number) => void
-  onSubmit: (value: number) => void
   formatLabel?: (value: number) => string
   disabled?: boolean
 }
@@ -20,7 +18,6 @@ export default function Slider({
   step,
   value,
   onChange,
-  onSubmit,
   formatLabel,
   disabled = false,
 }: SliderProps) {
@@ -73,9 +70,6 @@ export default function Slider({
           +
         </Button>
       </div>
-      <Button onClick={() => onSubmit(value)} disabled={disabled} fullWidth>
-        {en.onboarding.inputs.confirm}
-      </Button>
     </div>
   )
 }

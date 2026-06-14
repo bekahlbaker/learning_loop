@@ -1,5 +1,19 @@
 {
   "onboarding": {
+    "cards": {
+      "phone": {
+        "title": "Welcome to Learning Loop",
+        "prompt": "Enter your US phone number to get started."
+      },
+      "otp": {
+        "title": "Verify your number",
+        "prompt": "We sent a 6-digit code to {phone}. Enter it below."
+      },
+      "name": {
+        "title": "What's your name?",
+        "prompt": "We'll use this to personalize your experience."
+      }
+    },
     "steps": {
       "name": {
         "prompt": "Hey! Welcome to Learning Loop. I'm here to help you build your personalized food safety certification plan. First things first — what's your name?",
@@ -86,10 +100,58 @@
         "prompt": "You're all set, {name}! I've built your personalized learning plan. Let's get started!"
       }
     },
+    "settings": {
+      "title": "Your Learning Preferences",
+      "subtitle": "We've set everything to a sensible starting point. Feel free to adjust anything before continuing.",
+      "continue": "Continue",
+      "fields": {
+        "timeOfDay": {
+          "label": "Preferred study time",
+          "description": "When during the day do you usually have time to study?"
+        },
+        "deadline": {
+          "label": "Completion deadline",
+          "description": "Helps us pace your plan. Skip this if you don't have one."
+        },
+        "dailyTimeBudget": {
+          "label": "Daily time budget",
+          "description": "How many minutes per day can you dedicate to studying?"
+        },
+        "daysPerWeek": {
+          "label": "Days per week",
+          "description": "How many days a week do you want to study?"
+        },
+        "confidence": {
+          "label": "Confidence level",
+          "description": "How confident are you in your food safety knowledge? (1 = none, 10 = expert)"
+        },
+        "experience": {
+          "label": "Restaurant experience",
+          "description": "How long have you been working in a restaurant?"
+        },
+        "currentRole": {
+          "label": "Current role",
+          "description": "What best describes your current role?"
+        },
+        "certification": {
+          "label": "Existing certification",
+          "description": "Do you already have a food handler or food manager certification?"
+        },
+        "reason": {
+          "label": "Why you're here",
+          "description": "What's your main reason for taking this course?"
+        },
+        "learningStyle": {
+          "label": "Learning style",
+          "description": "How do you prefer to learn?"
+        }
+      }
+    },
     "inputs": {
       "confirm": "Confirm",
       "send": "Send",
-      "verified": "Verified"
+      "verified": "Verified",
+      "namePlaceholder": "Your first name"
     }
   }
 }

@@ -1,14 +1,16 @@
-# Conversational Onboarding — Component Spec
+# Onboarding — Component Spec
 
-**Date:** 2026-06-13  
-**Scope:** All UI components required to render the conversational onboarding flow in Learning Loop. Covers layout scaffolding, the chat thread, and every input type required by the onboarding question set.
+**Date:** 2026-06-14
+**Scope:** All UI components required to render the onboarding flow in Learning Loop. Covers layout scaffolding, the step flow (phone-number login → OTP verification → name entry), the settings dashboard, and every input type required by the onboarding question set.
+
+> **Revision note:** Onboarding is no longer a conversation. The chat thread and its components (`ChatContainer`, `ChatThread`, `ChatBubble`, `TypingIndicator`, `InputArea`) have been removed. Onboarding now runs as a short step flow (phone login → code verification → name) followed by a settings dashboard that surfaces every remaining onboarding question as an editable control preset to a sensible default. Lesson UI is out of scope for this spec.
 
 ---
 
 ## Design Conventions (applies to all components)
 
 - **Border radius:** `rounded-2xl` (16px) on all containers, cards, inputs, and buttons
-- **Shadows:** `shadow-sm` on interactive elements (buttons, inputs), `shadow-md` on cards/bubbles
+- **Shadows:** `shadow-sm` on interactive elements (buttons, inputs), `shadow-md` on cards
 - **Colors:** Tailwind default palette only — no new custom colors. Neutrals (gray-100 through gray-800) for surfaces and borders; gray-300 for borders; white for input backgrounds
 - **Typography:** Tailwind defaults
 - **Breakpoints:** Mobile-first. `sm` = 640px (Tailwind default)
@@ -18,23 +20,41 @@
 
 ---
 
+## Onboarding Phases & Defaults
+
+The flow has three phases:
+
+1. **Login** — phone-number entry → SMS code verification → validation.
+2. **Name** — a single text input for the learner's name.
+3. **Settings dashboard** — every remaining onboarding question rendered as an editable control, each preset to the middle/default of its range so the learner can simply confirm or adjust before continuing.
+
+**Default preset rules (from the project plan).** Every settings control initializes to the middle/default of its range, never an extreme:
+
+- **Slider 1–7** → preset to **4**
+- **Slider 1–10** → preset to **5**
+- **Other sliders** → the middle step of the range (e.g., daily time budget 5–30 → **15**)
+- **OptionButtonGroup (four options)** → the **second option** (index 1); groups with a different option count default to the **middle option** of the list
+- **DateInput (deadline)** → **no deadline** (skipped / `null`), since a date has no meaningful middle
+
+---
+
 ## Question → Component Mapping
 
-| Question | Component |
-|---|---|
-| Name | `TextInput` |
-| Phone number | `PhoneInput` |
-| OTP code verification | `OTPInput` |
-| Preferred time of day | `OptionButtonGroup` |
-| Completion deadline | `DateInput` (with skip) |
-| Daily time budget | `Slider` |
-| Days per week | `Slider` |
-| Confidence level | `Slider` |
-| Restaurant experience | `OptionButtonGroup` |
-| Current role | `OptionButtonGroup` |
-| Existing certification | `OptionButtonGroup` |
-| Why taking this course | `OptionButtonGroup` |
-| Preferred learning style | `OptionButtonGroup` |
+| Question | Phase | Component | Default preset |
+|---|---|---|---|
+| Phone number | Login | `PhoneInput` | — (entered) |
+| OTP code verification | Login | `OTPInput` | — (entered) |
+| Name | Name | `TextInput` | — (entered) |
+| Preferred time of day | Settings | `OptionButtonGroup` (in `SettingsField`) | second option |
+| Completion deadline | Settings | `DateInput` w/ skip (in `SettingsField`) | no deadline |
+| Daily time budget | Settings | `Slider` (in `SettingsField`) | 15 min (middle of 5–30) |
+| Days per week | Settings | `Slider` | 4 (middle of 1–7) |
+| Confidence level | Settings | `Slider` | 5 (middle of 1–10) |
+| Restaurant experience | Settings | `OptionButtonGroup` | second option |
+| Current role | Settings | `OptionButtonGroup` | second option |
+| Existing certification | Settings | `OptionButtonGroup` | second option |
+| Why taking this course | Settings | `OptionButtonGroup` | second option |
+| Preferred learning style | Settings | `OptionButtonGroup` | second option |
 
 ---
 
@@ -60,7 +80,7 @@ export interface OnboardingLayoutProps {
 - Full viewport height (`min-h-screen`)
 - White or gray-50 background
 - Horizontally centered column, `max-w-lg` on `sm`+, full width on mobile
-- Renders children (typically `ChatContainer`) at full height within the column
+- Renders children (typically `OnboardingFlow`) within the centered column
 
 **Notes:**
 - Server Component — no interactivity at this level
@@ -68,173 +88,156 @@ export interface OnboardingLayoutProps {
 
 ---
 
-### `ChatContainer`
+### `OnboardingFlow`
 
-**Purpose:** Splits the onboarding screen into a scrollable message thread (top) and a pinned input zone (bottom). The single structural component a page wires together.
+**Purpose:** Top-level controller for the onboarding step machine. Owns which phase is on screen and the data collected so far, and renders the correct step. Replaces the old conversation parent.
 
-**Location:** `src/components/chat/ChatContainer.tsx`
+**Location:** `src/components/onboarding/OnboardingFlow.tsx`
 
 **Props:**
 
 ```ts
-export interface ChatContainerProps {
-  thread: React.ReactNode    // ChatThread
-  input: React.ReactNode     // InputArea or null
+export type OnboardingStep = 'phone' | 'otp' | 'name' | 'settings'
+
+export interface OnboardingProfile {
+  name: string
+  settings: SettingsValues   // see SettingsDashboard
+}
+
+export interface OnboardingFlowProps {
+  onComplete: (profile: OnboardingProfile) => void
 }
 ```
 
 **Behavior:**
-- Thread area fills available vertical space, `overflow-y-auto`
-- Input area is pinned to the bottom of the viewport (sticky footer inside the column)
-- Exposes a `ref` or scroll utility so `ChatThread` can trigger auto-scroll to bottom
+- Holds the current `OnboardingStep` and advances on each successful step:
+  `phone` → `otp` → `name` → `settings`
+- **phone:** renders an `OnboardingCard` wrapping `PhoneInput`; on submit, requests an SMS code and advances to `otp`
+- **otp:** renders an `OnboardingCard` wrapping `OTPInput`; on a valid code advances to `name`; on an invalid code surfaces the error and allows resend
+- **name:** renders an `OnboardingCard` wrapping `TextInput`; on submit stores the name and advances to `settings`
+- **settings:** renders `SettingsDashboard`; on save, assembles `OnboardingProfile` and calls `onComplete`
+- Each step transition may animate (fade/slide), skipped under `prefers-reduced-motion`
 
 **Notes:**
-- Client Component (`'use client'`) — manages scroll state
-- Padding at bottom of thread prevents last bubble from hiding behind the input zone
+- Client Component (`'use client'`) — owns step + collected-value state
+- Only one step is mounted at a time
+- The captured profile (name + settings) is what the loop hands to the brain to build the initial profile
 
 ---
 
-## 2. Conversation Thread
+### `OnboardingCard`
 
----
+**Purpose:** Presentational card wrapper for a single login/name step — a titled, optionally-prompted card containing one input and optional footer actions.
 
-### `ChatThread`
-
-**Purpose:** Ordered list of all chat messages in the current conversation. Renders `ChatBubble` and `TypingIndicator` nodes.
-
-**Location:** `src/components/chat/ChatThread.tsx`
+**Location:** `src/components/onboarding/OnboardingCard.tsx`
 
 **Props:**
 
 ```ts
-export interface Message {
-  id: string
-  role: 'assistant' | 'user'
-  content: string
-}
-
-export interface ChatThreadProps {
-  messages: Message[]
-  isTyping: boolean
+export interface OnboardingCardProps {
+  title: string
+  prompt?: string
+  children: React.ReactNode   // the step's input component
+  footer?: React.ReactNode    // optional actions (e.g., a Button or ghost link)
 }
 ```
 
 **Behavior:**
-- Maps `messages` to `ChatBubble` components
-- When `isTyping` is true, appends a `TypingIndicator` at the bottom
-- Auto-scrolls to the bottom whenever `messages` or `isTyping` changes (via `useEffect` + `scrollIntoView` on the last element)
+- Renders `title` (prominent) and optional `prompt` (muted, gray-500) above the body
+- Body holds the input; footer (if provided) sits below
+- Centered within the layout column
 
-**Notes:**
-- Client Component
-- Role determines bubble alignment and color (passed to `ChatBubble`)
-- List items should have a stable `key` (message `id`)
-- `aria-live="polite"` on the thread container so screen readers announce new messages
-
----
-
-### `ChatBubble`
-
-**Purpose:** A single message bubble. Styled differently for the LLM (`assistant`) and the learner (`user`).
-
-**Location:** `src/components/chat/ChatBubble.tsx`
-
-**Props:**
-
-```ts
-export interface ChatBubbleProps {
-  role: 'assistant' | 'user'
-  children: React.ReactNode
-  className?: string
-}
-```
-
-**Variants:**
-
-| Variant | Alignment | Background | Text | Shadow |
-|---|---|---|---|---|
-| `assistant` | Left | white | gray-800 | `shadow-md` |
-| `user` | Right | gray-800 | white | `shadow-sm` |
-
-**Behavior:**
-- `rounded-2xl` on all corners; optionally flatten the sending-side bottom corner (`rounded-bl-sm` for user, `rounded-br-sm` for assistant) for a classic chat aesthetic
-- Max width `max-w-[80%]` to prevent bubbles spanning full width
-- Entrance animation: fade + slight upward translate (300ms, skipped under `prefers-reduced-motion`)
+**Styling:**
+- `rounded-2xl`, white background, `shadow-md`, comfortable padding (`p-6`)
 
 **Notes:**
 - Pure presentational component — no state
-- Children are `ReactNode` to support both plain text and formatted content
 
 ---
 
-### `TypingIndicator`
+## 2. Settings Dashboard
 
-**Purpose:** Three animated dots shown inside an assistant bubble while the LLM is "thinking." Shown for approximately 3 seconds before the real assistant message appears.
+---
 
-**Location:** `src/components/chat/TypingIndicator.tsx`
+### `SettingsDashboard`
+
+**Purpose:** Renders every remaining onboarding question as an editable control, each preset to its default. The learner can confirm or change any value, then continue.
+
+**Location:** `src/components/onboarding/SettingsDashboard.tsx`
 
 **Props:**
 
 ```ts
-export interface TypingIndicatorProps {
-  className?: string
+export interface SettingsValues {
+  timeOfDay: string
+  deadline: Date | null
+  dailyTimeBudget: number
+  daysPerWeek: number
+  confidence: number
+  restaurantExperience: string
+  currentRole: string
+  existingCertification: string
+  reason: string
+  learningStyle: string
+}
+
+export interface SettingsDashboardProps {
+  initialValues?: Partial<SettingsValues>
+  onSave: (values: SettingsValues) => void
 }
 ```
 
 **Behavior:**
-- Renders three dots with a staggered bounce animation (each dot offset ~150ms)
-- Appears in an `assistant`-styled `ChatBubble` wrapper so it matches the assistant style
-- The parent (`ChatThread`) shows/hides it via the `isTyping` prop — this component owns only the animation
+- Initializes each field to its **default preset** (see *Onboarding Phases & Defaults*) unless overridden by `initialValues`
+- Renders one `SettingsField` per question, in the order listed in the mapping table, each wrapping the appropriate control (`Slider`, `OptionButtonGroup`, or `DateInput`)
+- Every control is freely editable — changing a value updates local state; nothing is locked after a first interaction
+- A primary "Continue" `Button` at the bottom calls `onSave` with the full `SettingsValues`
 
-**Animation:**
-```css
-/* Three dots, staggered: delay 0ms, 150ms, 300ms */
-@keyframes bounce { 0%, 80%, 100% { transform: translateY(0) } 40% { transform: translateY(-6px) } }
-```
+**Styling:**
+- Vertical stack of `SettingsField` rows with consistent spacing (`space-y-6`)
+- Scrolls within the layout column if taller than the viewport; the Continue button sits at the end of the stack
 
 **Notes:**
-- `aria-label="Assistant is typing"` on the wrapper
-- `role="status"` so screen readers announce it
+- Client Component — owns the working copy of the settings until save
+- `aria-label` (e.g., "Onboarding settings") on the form region
+
+---
+
+### `SettingsField`
+
+**Purpose:** A labeled row that pairs a question label/description with its control. The dashboard's per-question layout primitive (the settings equivalent of the old inline input switch).
+
+**Location:** `src/components/onboarding/SettingsField.tsx`
+
+**Props:**
+
+```ts
+export interface SettingsFieldProps {
+  label: string
+  description?: string
+  children: React.ReactNode   // the control: Slider | OptionButtonGroup | DateInput
+}
+```
+
+**Behavior:**
+- Renders `label` (font-medium, gray-800) and optional `description` (gray-500) above the control
+- Associates the label with the control for accessibility (`htmlFor` / wrapping `<label>` or `aria-labelledby`)
+
+**Notes:**
+- Pure presentational component — no state
+- Does not know which control it wraps; the dashboard chooses the control per question
 
 ---
 
 ## 3. Input Components
 
-All input components are rendered inline by `InputArea` below the most recent assistant bubble. When a learner submits, the input disappears and their answer appears as a user `ChatBubble`.
-
----
-
-### `InputArea`
-
-**Purpose:** The active input zone below the last assistant bubble. Acts as the switch that renders the correct input component for the current question type.
-
-**Location:** `src/components/chat/InputArea.tsx`
-
-**Props:**
-
-```ts
-export type InputType = 'text' | 'phone' | 'otp' | 'date' | 'slider' | 'options'
-
-export interface InputAreaProps {
-  type: InputType
-  onSubmit: (value: string | number | Date) => void
-  inputProps?: Record<string, unknown>  // forwarded to child input component
-}
-```
-
-**Behavior:**
-- Renders the correct child component based on `type`
-- Handles the visual fade-out transition after submission
-- Does not persist the input after submission — parent manages conversation state
-
-**Notes:**
-- Client Component
-- Only one `InputArea` is active at a time — the parent unmounts previous ones when moving to the next question
+These are used by the login/name steps (inside `OnboardingCard`, orchestrated by `OnboardingFlow`) and by the settings dashboard (inside `SettingsField`). No input renders itself inside a chat thread anymore.
 
 ---
 
 ### `TextInput`
 
-**Purpose:** Single-line freeform text field. Used for the learner's name.
+**Purpose:** Single-line freeform text field. Used for the learner's name (name step).
 
 **Location:** `src/components/inputs/TextInput.tsx`
 
@@ -260,7 +263,7 @@ export interface TextInputProps {
 | `fullWidth` | `w-full` |
 
 **Behavior:**
-- Submit on Enter key or by clicking the send `Button`
+- Submit on Enter key or by clicking the send/continue `Button`
 - Trims whitespace before calling `onSubmit`
 - Disabled state: `opacity-50 cursor-not-allowed`
 
@@ -272,7 +275,7 @@ export interface TextInputProps {
 
 ### `PhoneInput`
 
-**Purpose:** US phone number entry with live formatting. Used as the first step in the OTP authentication flow.
+**Purpose:** US phone number entry with live formatting. The first step in the login flow.
 
 **Location:** `src/components/inputs/PhoneInput.tsx`
 
@@ -292,7 +295,7 @@ export interface PhoneInputProps {
 - Formats input as `(XXX) XXX-XXXX` on each keystroke
 - Validates: exactly 10 US digits before enabling submit
 - Displays `error` in red text below the field if provided (e.g., invalid number, number already in use)
-- Submit on Enter or send button
+- Submit on Enter or send button — this triggers the SMS code request
 
 **Notes:**
 - Fundamentally different from `TextInput` — has US-specific formatting logic and digit-only input filtering
@@ -324,7 +327,7 @@ export interface OTPInputProps {
 - Auto-advances focus to the next box on each digit entry
 - Backspace on an empty box moves focus back to the previous box
 - Paste support: paste a full code string and it distributes across all boxes and auto-submits
-- Calls `onComplete` as soon as all boxes are filled (auto-submit, no separate button needed)
+- Calls `onComplete` as soon as all boxes are filled (auto-submit, no separate button needed) — `OnboardingFlow` validates the code and advances on success
 - Shows `error` below if the code is invalid
 - `onResend` renders as a ghost text link: "Resend code"
 
@@ -338,7 +341,7 @@ export interface OTPInputProps {
 
 ### `DateInput`
 
-**Purpose:** Date picker for the completion deadline question. Optionally skippable.
+**Purpose:** Date picker for the completion-deadline question in the settings dashboard. Skippable.
 
 **Location:** `src/components/inputs/DateInput.tsx`
 
@@ -348,8 +351,7 @@ export interface OTPInputProps {
 export interface DateInputProps {
   value: Date | null
   onChange: (date: Date | null) => void
-  onSubmit: (date: Date | null) => void
-  onSkip?: () => void          // renders a "No deadline" skip option when provided
+  onSkip?: () => void          // renders a "No deadline" option when provided
   minDate?: Date
   maxDate?: Date
   placeholder?: string
@@ -359,20 +361,19 @@ export interface DateInputProps {
 
 **Behavior:**
 - Wraps `react-datepicker` — no custom calendar built from scratch
-- When a date is selected, enables the submit `Button`
-- When `onSkip` is provided, renders a secondary ghost button or text link below: "I don't have a deadline"
-- Clicking skip calls `onSkip()` and submits `null` as the date value
+- Reports changes via `onChange`; the dashboard persists the value on Continue (no per-field submit)
+- Defaults to **no deadline** — when `onSkip` is provided, renders a secondary ghost button or text link: "I don't have a deadline"; choosing it sets the value to `null`
 - `minDate` defaults to today (cannot set a deadline in the past)
 
 **Styling:**
-- The `react-datepicker` popup should be styled to match the chat aesthetic — `rounded-2xl`, no sharp corners, `shadow-md`
+- The `react-datepicker` popup should be styled to match the onboarding card aesthetic — `rounded-2xl`, no sharp corners, `shadow-md`
 - Override `.react-datepicker` class in a co-located CSS module or via `popperClassName` prop
 
 ---
 
 ### `Slider`
 
-**Purpose:** Numeric range input with explicit increment/decrement buttons. Used for daily time budget (5–30 min), days per week (1–7), and confidence level (1–10).
+**Purpose:** Numeric range input with explicit increment/decrement buttons. Used in the settings dashboard for daily time budget (5–30 min), days per week (1–7), and confidence level (1–10).
 
 **Location:** `src/components/inputs/Slider.tsx`
 
@@ -385,7 +386,6 @@ export interface SliderProps {
   step: number
   value: number
   onChange: (value: number) => void
-  onSubmit: (value: number) => void
   formatLabel?: (value: number) => string   // e.g. value => `${value} min`
   disabled?: boolean
 }
@@ -398,7 +398,8 @@ export interface SliderProps {
 - `+` is disabled when `value === max`
 - Underlying `<input type="range">` is keyboard-accessible and visually styled
 - Clicking `+` adds `step`; clicking `−` subtracts `step`; both clamp to `[min, max]`
-- A confirm `Button` (primary) below submits the current value
+- Reports changes via `onChange`; there is **no** per-slider confirm button — the dashboard's single Continue button persists all values
+- Initial `value` is set by the dashboard to the control's default preset
 
 **Styling:**
 - Track: `rounded-full h-1.5 bg-gray-200` with a filled portion in gray-800 (or accent color)
@@ -407,17 +408,17 @@ export interface SliderProps {
 
 **Usage examples:**
 
-| Question | min | max | step | formatLabel |
-|---|---|---|---|---|
-| Daily time budget | 5 | 30 | 5 | `v => \`${v} min\`` |
-| Days per week | 1 | 7 | 1 | `v => \`${v} day${v > 1 ? 's' : ''}\`` |
-| Confidence level | 1 | 10 | 1 | `v => String(v)` |
+| Question | min | max | step | default | formatLabel |
+|---|---|---|---|---|---|
+| Daily time budget | 5 | 30 | 5 | 15 | `v => \`${v} min\`` |
+| Days per week | 1 | 7 | 1 | 4 | `v => \`${v} day${v > 1 ? 's' : ''}\`` |
+| Confidence level | 1 | 10 | 1 | 5 | `v => String(v)` |
 
 ---
 
 ### `OptionButton`
 
-**Purpose:** A single tappable answer option within a multi-choice question.
+**Purpose:** A single tappable answer option within a multi-choice settings question.
 
 **Location:** `src/components/inputs/OptionButton.tsx`
 
@@ -442,9 +443,8 @@ export interface OptionButtonProps {
 | `disabled` | gray-200 | gray-50 | gray-400 |
 
 **Behavior:**
-- Single tap: calls `onSelect(value)` and visually enters `selected` state
-- Once any option in the group is selected, all buttons are disabled (managed by `OptionButtonGroup`)
-- No toggle — selection is final; the group then disappears and the answer appears as a user `ChatBubble`
+- Tap: calls `onSelect(value)` and enters the `selected` state
+- Selection is **changeable** — tapping a different option in the group moves the selection; the group is not locked after a first choice (these are editable settings)
 
 **Styling:**
 - `rounded-2xl`, `shadow-sm`, `py-3 px-4`, `w-full`, font-medium
@@ -455,7 +455,7 @@ export interface OptionButtonProps {
 
 ### `OptionButtonGroup`
 
-**Purpose:** Lays out a set of `OptionButton` components in a responsive grid. Manages single-selection state and disables the group after a selection is made.
+**Purpose:** Lays out a set of `OptionButton` components in a responsive grid and manages single-selection state for a settings question.
 
 **Location:** `src/components/inputs/OptionButtonGroup.tsx`
 
@@ -465,7 +465,7 @@ export interface OptionButtonProps {
 export interface OptionButtonGroupProps {
   options: Array<{ label: string; value: string }>
   onSelect: (value: string) => void
-  selected?: string
+  selected?: string          // controlled; dashboard initializes to the default preset
   disabled?: boolean
 }
 ```
@@ -476,13 +476,13 @@ export interface OptionButtonGroupProps {
 - Gap: `gap-3`
 
 **Behavior:**
-- Tracks the selected value internally; calls `onSelect` on first selection
-- After selection, sets `disabled={true}` on all `OptionButton` children
+- Controlled by `selected`; the dashboard seeds it with the default preset (the second option for four-option groups; the middle option otherwise)
+- Calls `onSelect` whenever the learner picks an option, including changing a prior choice — selection remains editable
 - When the count of options is odd (e.g., 3 or 5 options), the last item spans both columns on desktop: `sm:col-span-2`
 
 **Notes:**
 - Single-select only — no multi-select needed for this question set
-- `role="group"` with an `aria-label` describing the question for accessibility
+- `role="radiogroup"` (single-select) with an `aria-label` describing the question for accessibility
 
 ---
 
@@ -492,7 +492,7 @@ export interface OptionButtonGroupProps {
 
 ### `Button`
 
-**Purpose:** General-purpose action button. Used for form submission (TextInput send, Slider confirm), the OTP resend link-style action, and other explicit actions.
+**Purpose:** General-purpose action button. Used for form submission (TextInput send, settings Continue), the OTP resend link-style action, and other explicit actions.
 
 **Location:** `src/components/buttons/Button.tsx`
 
@@ -540,12 +540,11 @@ export interface ButtonProps {
 src/components/
   layouts/
     OnboardingLayout.tsx
-  chat/
-    ChatContainer.tsx
-    ChatThread.tsx
-    ChatBubble.tsx
-    TypingIndicator.tsx
-    InputArea.tsx
+  onboarding/
+    OnboardingFlow.tsx
+    OnboardingCard.tsx
+    SettingsDashboard.tsx
+    SettingsField.tsx
   inputs/
     TextInput.tsx
     PhoneInput.tsx
@@ -574,27 +573,22 @@ src/components/
 
 ```
 OnboardingLayout
-  └── ChatContainer
-        ├── ChatThread
-        │     ├── ChatBubble (role=assistant) × N
-        │     ├── TypingIndicator  ← shown while isTyping
-        │     └── ChatBubble (role=user) × N
-        └── InputArea  ← renders exactly one of:
-              ├── TextInput
-              ├── PhoneInput
-              ├── OTPInput
-              ├── DateInput
-              ├── Slider
-              └── OptionButtonGroup
-                    └── OptionButton × N
+  └── OnboardingFlow            (step machine: phone → otp → name → settings)
+        ├── OnboardingCard (phone step)
+        │     └── PhoneInput
+        ├── OnboardingCard (otp step)
+        │     └── OTPInput
+        ├── OnboardingCard (name step)
+        │     └── TextInput
+        └── SettingsDashboard
+              ├── SettingsField × one per question
+              │     └── Slider | OptionButtonGroup | DateInput
+              │              └── OptionButton × N   (for OptionButtonGroup)
+              └── Button (Continue)
 ```
 
-**State flow for a question step:**
-1. Parent adds an assistant `ChatBubble` to `messages`
-2. `isTyping` is set `true` for ~3s (shows `TypingIndicator`)
-3. `isTyping` set `false`, assistant message appears
-4. `InputArea` renders the appropriate input below
-5. Learner answers → answer value passed to `onSubmit`
-6. Parent adds a user `ChatBubble` with the display value of the answer
-7. `InputArea` unmounts (or fades out)
-8. Loop repeats for the next question
+**Flow:**
+1. **Phone step** — learner enters their number → `PhoneInput` `onSubmit` → request SMS code → advance to OTP step.
+2. **OTP step** — learner enters the code → `OTPInput` `onComplete` → validate; on success advance to name step, on failure show error and offer "Resend code".
+3. **Name step** — learner enters their name → `TextInput` `onSubmit` → store name → advance to settings.
+4. **Settings step** — `SettingsDashboard` renders every question preset to its default; learner confirms or changes any value → Continue → `onComplete` fires with `{ name, settings }`, which the loop hands to the brain to build the initial profile.
