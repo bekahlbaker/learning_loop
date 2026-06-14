@@ -1,5 +1,7 @@
 # CLAUDE.md - Learning Loop
 
+---
+
 ## Role & Accountability
 
 You are a capable but context-limited collaborator. A human engineer is **100% accountable** for every line you produce. You do not own tasks -- you assist with them.
@@ -36,16 +38,6 @@ All branch promotions are done via pull requests on GitHub. Vercel automatically
 
 ---
 
-## GSD / Feature Context
-
-- Each feature has its own planning context under `.planning/<feature-name>/` and `.specify/<feature-name>/`.
-- Never write planning artifacts to a shared or top-level file that spans multiple features.
-- Step numbering is **local to each feature** -- Feature X and Feature Y each start at Step 1.
-- Do not modify the top-level `ROADMAP.md`. That is human-maintained.
-- When switching features mid-session: explicitly confirm the target feature name, its branch, and its planning directory before proceeding. Do not carry over assumptions from a previous feature context.
-
----
-
 ## Code Style
 
 ### Universal Rules
@@ -63,17 +55,10 @@ All branch promotions are done via pull requests on GitHub. Vercel automatically
 ```
 - React / Next.js project
 - Components: Before creating a new component, search the codebase for an existing one to reuse or extend via a variant. Only create a new component if no existing one fits.
-- Buttons: Use `IconButton` (src/components/buttons/IconButton.tsx) whenever a button's only content is an icon. Never wrap a raw <button> around an icon.
+- Buttons: Use `IconButton` (app/components/buttons/IconButton.tsx) whenever a button's only content is an icon. Never wrap a raw <button> around an icon.
 - CSS: Do not hardcode hex-colors, look in tailwind.config for the hex code and if it doesn't exist add it to tailwind.config under the closest matching section
 - Messaging: Do not hardcode copy, all titles and fake data should pull from en.json
 ```
-
-### CMS / Contentful
-
-- All Contentful fetches live in `src/cms/`. Do not inline fetch calls in page or component files.
-- Until a content model is defined for a section, use a named constant (e.g. `PLACEHOLDER_ITEMS`) at the top of the component file with a `// TODO: replace with Contentful fetch` comment. Do not hardcode copy inline.
-- Every Contentful fetch function must be typed: define and export the return type; never cast to `any`.
-- Contentful fetch errors must be handled explicitly — do not let a failed fetch silently produce an empty page.
 
 ### Navigation & Links
 
@@ -83,24 +68,23 @@ All branch promotions are done via pull requests on GitHub. Vercel automatically
 ### File & Directory Structure
 
 ```
-src/
-  cms/          <- Contentful
+app/
   components/   <- reusable UI
   hooks/        <- reusable hooks
   lib/          <- library specific utilities
   messages/     <- all messaging
 ```
 
-Components inside `/src/components/` are grouped into category folders:
+Components inside `/app/components/` are grouped into category folders:
 
 - Folder names: lowercase, kebab-case for multi-word names (e.g. `input-fields`, `buttons`)
 - File names: PascalCase (e.g. `Button.tsx`, `IconButton.tsx`)
-- All variants of a component type live in the same category folder (e.g. `Button.tsx` and `IconButton.tsx` both in `/src/components/buttons/`)
+- All variants of a component type live in the same category folder (e.g. `Button.tsx` and `IconButton.tsx` both in `/app/components/buttons/`)
 - Co-locate tests in the same folder, named `ComponentName.test.tsx`
 - One component per file, unless multiple components are tightly coupled and only used together
 - Before creating a new category folder, check whether the component fits an existing one
 
-Use kebab-case for Next.js route segments inside `/src/app/`.
+Use kebab-case for Next.js route segments inside `/app/`.
 
 ---
 
