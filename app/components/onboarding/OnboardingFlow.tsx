@@ -40,7 +40,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const handleOtpComplete = (code: string) => {
     setOtpDisabled(true)
     setOtpError(undefined)
-    // Mocked: accept any 6-digit code after a brief simulated network delay
+    // OTP validation is intentionally mocked for the demo — any 6-digit code is accepted.
+    // TODO: wire up a real SMS provider (e.g. Twilio Verify) before production use.
     setTimeout(() => {
       setOtpDisabled(false)
       setStep('name')

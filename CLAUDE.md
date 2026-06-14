@@ -13,6 +13,72 @@ You are a capable but context-limited collaborator. A human engineer is **100% a
 
 ---
 
+## Project Overview
+
+**Adaptive Learning Coach** — a validation-first proof of concept demonstrating a behavior-adaptive learning experience. The app adapts lesson delivery, tone, and pacing to individual learner behavior in real time, driven by a separate Decision & Adaptation Layer ("the Brain").
+
+The **Learning Loop** (this app) is responsible for: phone-number onboarding, flash-card lesson delivery, behavioral event emission, and rendering Brain-supplied directives and mastery scores. The LLM acts as teacher only — it controls tone and phrasing, never routing or grading.
+
+The **Brain** (separate service) consumes `LearningEvent`s and returns `BrainDirective`s (routing, tone, mastery). The Loop never scores or decides; the Brain never speaks to the learner.
+
+**Course:** Food Safety Essentials for Restaurant Staff — 3 levels, 12 lessons + 3 level reviews, aligned to the US FDA Food Code (2022). Located in [`app/constants/curriculum.json`](app/constants/curriculum.json).
+
+**Three demo personas** (same content, visibly different journeys):
+- **Experienced** (Alex Chen) — high confidence, skips ahead, brief explanations
+- **New** (Jamie Rivera) — no background, needs guidance, detailed + encouraging
+- **Disengaged** (Sam Torres) — mandatory training, rapid answers, frequent abandonment
+
+---
+
+## Build Plan — Waves
+
+The project is built in sequential waves; items within a wave run in parallel across two tracks: **Track A** (Loop/UI) and **Track B/C** (Brain foundation and pre-user validation).
+
+### Wave 0 — Settle the contract ✅ COMPLETE
+
+All three shared contracts agreed and codified before any UI or Brain logic is built.
+
+- ✅ **L1** Author content and define the concept/prerequisite/assessment structure → [`app/constants/curriculum.json`](app/constants/curriculum.json) (course content: 3 levels, 12 lessons, structured questions), [`app/types/curriculum.ts`](app/types/curriculum.ts) (TypeScript types for `Curriculum`, `CurriculumLevel`, `CurriculumLesson`, question variants)
+- ✅ **Onboarding question set** → [`app/types/onboarding.ts`](app/types/onboarding.ts) (all question types, option sets, and composed `OnboardingAnswers` covering profile, schedule, prior knowledge, and motivation)
+- ✅ **Event taxonomy + Loop↔Brain directive contract** → [`app/types/events.ts`](app/types/events.ts) (40+ events across the full learner lifecycle: auth, onboarding, session, lesson, question, AI teacher, Brain, admin), [`app/types/brain.ts`](app/types/brain.ts) (`BrainDirective`, `BrainRequest`, `DirectiveType`, `TeachingTone`, `ExplanationDepth`, mastery scoring schema, persona shape), [`app/constants/personas.ts`](app/constants/personas.ts) (three seeded cold-start personas with onboarding answers and behavior profiles)
+
+### Wave 1 — Foundations (next)
+
+**Track A — Loop UI** (built against mocked Brain directives):
+- **L2** Onboarding UI — phone login, name input, settings dashboard
+- **L3** Flash-card session UI (structured question types only)
+- **L4** AI teacher integration — best available model, prompt-driven, streaming
+
+**Track B — Brain foundation:**
+- **B1** Learner-state schema (PostgreSQL / Prisma)
+- **B4** Event capture implementation
+
+**Track C — Pre-user validation** (fully independent of Loop UI; needs only Wave 0 outputs):
+- **B5 → B6 → B7** Synthetic learner generator → validation harness + A/A test → pattern recovery (strict chain)
+- **B8** Monte Carlo power analysis (go/no-go gate before building any live model)
+- **B9** Offline predictor validation on existing analytics
+
+### Wave 2 — Decision logic and integration
+
+- **B2** Deterministic decision/adaptation rules (requires B1)
+- **B3** Mastery scoring (requires B1 + curriculum)
+- **L5** Wire event emission (requires L3 and B4)
+- Integration: swap L3/L4 mocks for real Brain directives; wire L6/L7 to real Brain output
+
+L6 and L7 UI shells can be scaffolded in Wave 1 against fake data; only their integration lands here.
+
+### Wave 3 — Live PoC and proof phase
+
+The deterministic PoC is demonstrable at the Wave 2 boundary — a complete milestone on its own.
+
+- **B10** Define outcome, baseline, and promotion gate (informed by B8 power analysis)
+- **B11** First learned signal in shadow mode (requires live PoC accruing real events)
+- **B12** Live A/B test and promotion on demonstrated lift only — never on shadow-mode predictive accuracy
+- **B13** (optional) Tiny human pilot for qualitative reality-checks
+- **B14** (ongoing from day one) Behavioral signal instrumentation — starts at L5/B4 and never stops
+
+---
+
 ## Git Workflow
 
 ### Branch Roles

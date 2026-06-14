@@ -153,5 +153,27 @@
       "verified": "Verified",
       "namePlaceholder": "Your first name"
     }
+  },
+  "session": {
+    "feedback": {
+      "correct": "Correct! Nice work.",
+      "incorrect": "Not quite — review the lesson content and try again next time.",
+      "continue": "Continue"
+    },
+    "hint": {
+      "show": "Show hint",
+      "hide": "Hide hint"
+    },
+    "orchestrator": {
+      "loading": "Loading lesson…",
+      "error": "Something went wrong loading the curriculum.",
+      "retry": "Try again",
+      "completed": {
+        "title": "Session complete!",
+        "message": "Well done — you've finished all the lessons in this level.",
+        "backHome": "Back to home"
+      },
+      "noLessons": "No lessons available."
+    }
   }
 }

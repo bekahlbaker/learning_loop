@@ -43,10 +43,11 @@ Until these three are settled, everything downstream is guesswork. They are chea
 
 Within a wave, items run in parallel. Waves are sequential. Two tracks are assumed — a Loop/app track and a Brain track — but the validation work (Track C below) is independent enough to hand to a third person if you have one.
 
-### Wave 0 — Settle the contract (blocks everything)
-- **L1** author content and define the concept/prerequisite/assessment structure.
-- Agree the **onboarding question set**.
-- Design the **event taxonomy** and the **Loop↔Brain directive contract**.
+### Wave 0 — Settle the contract (blocks everything) ✅ COMPLETED
+
+- ✅ **L1** author content and define the concept/prerequisite/assessment structure.
+- ✅ Agree the **onboarding question set**.
+- ✅ Design the **event taxonomy** and the **Loop↔Brain directive contract**.
 
 The taxonomy point is load-bearing: the Brain plan warns that sequence and timing not logged can't be reconstructed later, so decide granularity here, not after L5.
 
