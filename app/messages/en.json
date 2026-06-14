@@ -169,11 +169,29 @@
       "error": "Something went wrong loading the curriculum.",
       "retry": "Try again",
       "completed": {
-        "title": "Session complete!",
-        "message": "Well done — you've finished all the lessons in this level.",
+        "title": "Course complete!",
+        "message": "Well done — you've finished all three levels.",
         "backHome": "Back to home"
       },
       "noLessons": "No lessons available."
+    },
+    "review": {
+      "intro": {
+        "badge": "Level Review",
+        "start": "Start Review"
+      },
+      "result": {
+        "title": "Review Complete",
+        "pass": {
+          "message": "Great work — you passed!",
+          "nextLevel": "Continue to Next Level",
+          "finish": "Complete Course"
+        },
+        "fail": {
+          "message": "You need at least 2 correct to advance. Review the lessons and try again.",
+          "retry": "Retry Review"
+        }
+      }
     }
   }
 }

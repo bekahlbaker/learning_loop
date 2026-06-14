@@ -7,6 +7,7 @@ export interface LessonContextHeaderProps {
   totalLessons: number
   overallMastery: number
   teachingTone: TeachingTone
+  itemLabel?: string
 }
 
 export default function LessonContextHeader({
@@ -16,12 +17,13 @@ export default function LessonContextHeader({
   totalLessons,
   overallMastery,
   teachingTone,
+  itemLabel = 'Lesson',
 }: LessonContextHeaderProps) {
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="flex flex-col gap-0.5 min-w-0">
         <span className="text-xs text-gray-500 truncate">
-          {levelTitle} · Lesson {lessonIndex} of {totalLessons}
+          {levelTitle} · {itemLabel} {lessonIndex} of {totalLessons}
         </span>
         <span className="text-sm font-semibold text-gray-900 leading-snug">{lessonTitle}</span>
       </div>

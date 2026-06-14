@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import FlashCard from '@/app/components/session/FlashCard'
 import AnswerFeedback from '@/app/components/session/AnswerFeedback'
+import LevelReviewIntro from '@/app/components/session/LevelReviewIntro'
+import LevelReviewResult from '@/app/components/session/LevelReviewResult'
 import Button from '@/app/components/buttons/Button'
 import { useMockBrainDirective } from '@/app/hooks/useMockBrainDirective'
 import en from '@/app/messages/en.json'
 import type { PersonaId } from '@/app/types/brain'
-import type { Curriculum, CurriculumLesson } from '@/app/types/curriculum'
+import type { Curriculum } from '@/app/types/curriculum'
 import type { FlashCardStatus } from '@/app/components/session/FlashCard'
 
 export interface SessionOrchestratorProps {
@@ -16,12 +18,15 @@ export interface SessionOrchestratorProps {
 }
 
 type SessionState = 'loading' | 'active' | 'completed' | 'error'
+type SessionPhase = 'lessons' | 'review-intro' | 'review' | 'review-result'
 
 interface AnswerRecord {
   optionId: string
   isCorrect: boolean
   usedHint: boolean
 }
+
+const REVIEW_PASS_THRESHOLD = 2
 
 const copy = en.session.orchestrator
 
@@ -32,7 +37,11 @@ export default function SessionOrchestrator({
 
   const [sessionState, setSessionState] = useState<SessionState>('loading')
   const [curriculum, setCurriculum] = useState<Curriculum | null>(null)
-  const [currentLessonIndex, setCurrentLessonIndex] = useState(0)
+  const [currentLevelIndex, setCurrentLevelIndex] = useState(0)
+  const [currentLessonIndexInLevel, setCurrentLessonIndexInLevel] = useState(0)
+  const [sessionPhase, setSessionPhase] = useState<SessionPhase>('lessons')
+  const [currentReviewQuestionIndex, setCurrentReviewQuestionIndex] = useState(0)
+  const [reviewCorrectCount, setReviewCorrectCount] = useState(0)
   const [flashCardStatus, setFlashCardStatus] = useState<FlashCardStatus>('loading')
   const [lastAnswer, setLastAnswer] = useState<AnswerRecord | null>(null)
 
@@ -51,33 +60,72 @@ export default function SessionOrchestrator({
     return () => { cancelled = true }
   }, [])
 
-  // All lessons across all levels in order
-  const allLessons: Array<{ lesson: CurriculumLesson; levelTitle: string; totalInLevel: number; indexInLevel: number }> =
-    curriculum?.levels.flatMap((level) =>
-      level.lessons.map((lesson, i) => ({
-        lesson,
-        levelTitle: level.title,
-        totalInLevel: level.lessons.length,
-        indexInLevel: i + 1,
-      }))
-    ) ?? []
+  const currentLevel = curriculum?.levels[currentLevelIndex] ?? null
 
-  const currentEntry = allLessons[currentLessonIndex] ?? null
+  const currentLesson = (() => {
+    if (!currentLevel) return null
+    if (sessionPhase === 'lessons') return currentLevel.lessons[currentLessonIndexInLevel] ?? null
+    if (sessionPhase === 'review') return currentLevel.review.lessons[currentReviewQuestionIndex] ?? null
+    return null
+  })()
 
   const handleAnswer = (optionId: string, isCorrect: boolean, usedHint: boolean) => {
     setLastAnswer({ optionId, isCorrect, usedHint })
     setFlashCardStatus('answered')
+    if (sessionPhase === 'review' && isCorrect) {
+      setReviewCorrectCount((c) => c + 1)
+    }
   }
 
   const handleContinue = () => {
-    const nextIndex = currentLessonIndex + 1
-    if (nextIndex >= allLessons.length) {
+    setLastAnswer(null)
+    if (sessionPhase === 'lessons') {
+      const isLastLesson = currentLessonIndexInLevel >= (currentLevel?.lessons.length ?? 0) - 1
+      if (isLastLesson) {
+        setSessionPhase('review-intro')
+      } else {
+        setCurrentLessonIndexInLevel((i) => i + 1)
+        setFlashCardStatus('idle')
+      }
+    } else if (sessionPhase === 'review') {
+      const isLastQuestion = currentReviewQuestionIndex >= (currentLevel?.review.lessons.length ?? 0) - 1
+      if (isLastQuestion) {
+        setSessionPhase('review-result')
+      } else {
+        setCurrentReviewQuestionIndex((i) => i + 1)
+        setFlashCardStatus('idle')
+      }
+    }
+  }
+
+  const handleStartReview = () => {
+    setCurrentReviewQuestionIndex(0)
+    setReviewCorrectCount(0)
+    setLastAnswer(null)
+    setFlashCardStatus('idle')
+    setSessionPhase('review')
+  }
+
+  const handleReviewContinue = () => {
+    const isLastLevel = currentLevelIndex >= (curriculum?.levels.length ?? 0) - 1
+    if (isLastLevel) {
       setSessionState('completed')
     } else {
-      setCurrentLessonIndex(nextIndex)
-      setFlashCardStatus('idle')
+      setCurrentLevelIndex((i) => i + 1)
+      setCurrentLessonIndexInLevel(0)
+      setCurrentReviewQuestionIndex(0)
+      setReviewCorrectCount(0)
       setLastAnswer(null)
+      setSessionPhase('lessons')
+      setFlashCardStatus('idle')
     }
+  }
+
+  const handleRetryReview = () => {
+    setCurrentReviewQuestionIndex(0)
+    setReviewCorrectCount(0)
+    setLastAnswer(null)
+    setSessionPhase('review-intro')
   }
 
   const handleRetry = () => {
@@ -86,7 +134,11 @@ export default function SessionOrchestrator({
     import('@/app/constants/curriculum.json')
       .then((mod) => {
         setCurriculum(mod.curriculum as Curriculum)
-        setCurrentLessonIndex(0)
+        setCurrentLevelIndex(0)
+        setCurrentLessonIndexInLevel(0)
+        setCurrentReviewQuestionIndex(0)
+        setReviewCorrectCount(0)
+        setSessionPhase('lessons')
         setLastAnswer(null)
         setSessionState('active')
         setFlashCardStatus('idle')
@@ -120,22 +172,60 @@ export default function SessionOrchestrator({
     )
   }
 
+  if (sessionPhase === 'review-intro' && currentLevel) {
+    return (
+      <LevelReviewIntro
+        review={currentLevel.review}
+        onStart={handleStartReview}
+      />
+    )
+  }
+
+  if (sessionPhase === 'review-result' && currentLevel) {
+    const totalCount = currentLevel.review.lessons.length
+    const passed = reviewCorrectCount >= REVIEW_PASS_THRESHOLD
+    const isLastLevel = currentLevelIndex >= (curriculum?.levels.length ?? 0) - 1
+    return (
+      <LevelReviewResult
+        review={currentLevel.review}
+        correctCount={reviewCorrectCount}
+        totalCount={totalCount}
+        passed={passed}
+        isLastLevel={isLastLevel}
+        onContinue={handleReviewContinue}
+        onRetry={handleRetryReview}
+      />
+    )
+  }
+
+  const isReview = sessionPhase === 'review'
+  const levelContext = currentLevel
+    ? isReview
+      ? {
+          levelTitle: currentLevel.review.title,
+          lessonIndex: currentReviewQuestionIndex + 1,
+          totalLessons: currentLevel.review.lessons.length,
+          itemLabel: 'Question',
+        }
+      : {
+          levelTitle: currentLevel.title,
+          lessonIndex: currentLessonIndexInLevel + 1,
+          totalLessons: currentLevel.lessons.length,
+        }
+    : { levelTitle: '', lessonIndex: 0, totalLessons: 0 }
+
+  const flashCardKey = currentLesson?.id ?? `${currentLevelIndex}-${sessionPhase}-${isReview ? currentReviewQuestionIndex : currentLessonIndexInLevel}`
+
   return (
     <div className="flex flex-col gap-0">
       <FlashCard
-        lesson={currentEntry?.lesson ?? null}
+        key={flashCardKey}
+        lesson={currentLesson}
         directive={directive}
-        levelContext={
-          currentEntry
-            ? {
-                levelTitle: currentEntry.levelTitle,
-                lessonIndex: currentEntry.indexInLevel,
-                totalLessons: currentEntry.totalInLevel,
-              }
-            : { levelTitle: '', lessonIndex: 0, totalLessons: 0 }
-        }
+        levelContext={levelContext}
         status={flashCardStatus}
         onAnswer={handleAnswer}
+        isReview={isReview}
       />
       {flashCardStatus === 'answered' && lastAnswer && (
         <AnswerFeedback

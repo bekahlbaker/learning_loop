@@ -14,6 +14,7 @@ export interface FlashCardLevelContext {
   levelTitle: string
   lessonIndex: number
   totalLessons: number
+  itemLabel?: string
 }
 
 export interface FlashCardProps {
@@ -22,6 +23,7 @@ export interface FlashCardProps {
   levelContext: FlashCardLevelContext
   status: FlashCardStatus
   onAnswer: (optionId: string, isCorrect: boolean, usedHint: boolean) => void
+  isReview?: boolean
 }
 
 function SkeletonBlock({ className }: { className: string }) {
@@ -49,6 +51,7 @@ export default function FlashCard({
   levelContext,
   status,
   onAnswer,
+  isReview = false,
 }: FlashCardProps) {
   const [usedHint, setUsedHint] = useState(false)
 
@@ -87,15 +90,18 @@ export default function FlashCard({
         totalLessons={levelContext.totalLessons}
         overallMastery={directive.overallMastery}
         teachingTone={directive.teachingTone}
+        itemLabel={levelContext.itemLabel}
       />
 
       <LessonContentBlock content={lesson.content} />
 
-      <HintReveal
-        hint={lesson.hint}
-        onReveal={handleHintReveal}
-        disabled={isAnswered}
-      />
+      {!isReview && (
+        <HintReveal
+          hint={lesson.hint}
+          onReveal={handleHintReveal}
+          disabled={isAnswered}
+        />
+      )}
 
       <QuestionBlock
         question={lesson.question}
