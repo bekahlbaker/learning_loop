@@ -23,6 +23,7 @@ export interface FlashCardProps {
   levelContext: FlashCardLevelContext
   status: FlashCardStatus
   onAnswer: (optionId: string, isCorrect: boolean, usedHint: boolean) => void
+  onHintReveal?: () => void
   isReview?: boolean
 }
 
@@ -51,6 +52,7 @@ export default function FlashCard({
   levelContext,
   status,
   onAnswer,
+  onHintReveal,
   isReview = false,
 }: FlashCardProps) {
   const [usedHint, setUsedHint] = useState(false)
@@ -61,6 +63,7 @@ export default function FlashCard({
 
   const handleHintReveal = () => {
     setUsedHint(true)
+    onHintReveal?.()
   }
 
   const isAnswered = status === 'answered'

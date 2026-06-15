@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  transpilePackages: ['@adaptive/shared'],
   turbopack: {
     root: __dirname,
   },
