@@ -8,8 +8,9 @@ import LevelReviewIntro from '@/app/components/session/LevelReviewIntro'
 import LevelReviewResult from '@/app/components/session/LevelReviewResult'
 import Button from '@/app/components/buttons/Button'
 import { useMockBrainDirective } from '@/app/hooks/useMockBrainDirective'
+import { useTeacherExplanation } from '@/app/hooks/useTeacherExplanation'
 import en from '@/app/messages/en.json'
-import type { PersonaId } from '@/app/types/brain'
+import type { PersonaId } from '@adaptive/shared'
 import type { Curriculum } from '@/app/types/curriculum'
 import type { FlashCardStatus } from '@/app/components/session/FlashCard'
 
@@ -68,6 +69,10 @@ export default function SessionOrchestrator({
     if (sessionPhase === 'review') return currentLevel.review.lessons[currentReviewQuestionIndex] ?? null
     return null
   })()
+
+  // Pass null during review — AI teacher only explains answers in regular lesson flow
+  const lessonForTeacher = sessionPhase === 'lessons' ? currentLesson : null
+  const { explanation, isStreaming } = useTeacherExplanation(lessonForTeacher, lastAnswer, directive)
 
   const handleAnswer = (optionId: string, isCorrect: boolean, usedHint: boolean) => {
     setLastAnswer({ optionId, isCorrect, usedHint })
@@ -231,6 +236,8 @@ export default function SessionOrchestrator({
         <AnswerFeedback
           isCorrect={lastAnswer.isCorrect}
           teachingTone={directive.teachingTone}
+          explanation={explanation}
+          isStreaming={isStreaming}
           onContinue={handleContinue}
         />
       )}

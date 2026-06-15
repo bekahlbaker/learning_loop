@@ -1,5 +1,7 @@
-import { PERSONAS_BY_ID } from '@/app/constants/personas'
-import type { BrainDirective, PersonaId } from '@/app/types/brain'
+import { PERSONAS_BY_ID } from '@adaptive/shared'
+import type { BrainDirective, PersonaId } from '@adaptive/shared'
+
+// todo: create an API route proxy to the brain service to bypass CORS issues
 
 export function useMockBrainDirective(personaId: PersonaId): BrainDirective {
   const persona = PERSONAS_BY_ID[personaId]

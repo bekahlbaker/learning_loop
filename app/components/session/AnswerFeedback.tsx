@@ -1,11 +1,12 @@
 import Button from '@/app/components/buttons/Button'
 import en from '@/app/messages/en.json'
-import type { TeachingTone } from '@/app/types/brain'
+import type { TeachingTone } from '@adaptive/shared'
 
 export interface AnswerFeedbackProps {
   isCorrect: boolean
-  /** Reserved for L4 AI teacher framing; accepted but unused in L3 */
   teachingTone: TeachingTone
+  explanation: string
+  isStreaming: boolean
   onContinue: () => void
 }
 
@@ -47,7 +48,16 @@ function IncorrectIcon() {
 
 const copy = en.session.feedback
 
-export default function AnswerFeedback({ isCorrect, onContinue }: AnswerFeedbackProps) {
+export default function AnswerFeedback({
+  isCorrect,
+  explanation,
+  isStreaming,
+  onContinue,
+}: AnswerFeedbackProps) {
+  const waitingForFirstToken = isStreaming && explanation === ''
+  const showSkeleton = waitingForFirstToken
+  const showExplanation = explanation !== ''
+
   return (
     <div
       className={[
@@ -57,16 +67,34 @@ export default function AnswerFeedback({ isCorrect, onContinue }: AnswerFeedback
           : 'bg-red-50 border border-red-400',
       ].join(' ')}
     >
-      <div
-        className={[
-          'flex items-center gap-2 text-sm font-medium',
-          isCorrect ? 'text-green-800' : 'text-red-800',
-        ].join(' ')}
-      >
+      <div className={isCorrect ? 'text-green-800' : 'text-red-800'}>
         {isCorrect ? <CorrectIcon /> : <IncorrectIcon />}
-        <span>{isCorrect ? copy.correct : copy.incorrect}</span>
       </div>
-      <Button variant="primary" fullWidth onClick={onContinue}>
+
+      {showSkeleton && (
+        <div className="flex flex-col gap-1.5" aria-hidden={true}>
+          <div className="h-3 rounded bg-current opacity-10 animate-pulse w-full" />
+          <div className="h-3 rounded bg-current opacity-10 animate-pulse w-4/5" />
+        </div>
+      )}
+
+      {showExplanation && (
+        <p
+          className={[
+            'text-sm leading-relaxed',
+            isCorrect ? 'text-green-900' : 'text-red-900',
+          ].join(' ')}
+        >
+          {explanation}
+        </p>
+      )}
+
+      <Button
+        variant="primary"
+        fullWidth
+        onClick={onContinue}
+        disabled={waitingForFirstToken}
+      >
         {copy.continue}
       </Button>
     </div>

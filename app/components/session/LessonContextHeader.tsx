@@ -1,4 +1,4 @@
-import type { TeachingTone } from '@/app/types/brain'
+import type { TeachingTone } from '@adaptive/shared'
 
 export interface LessonContextHeaderProps {
   levelTitle: string

@@ -30,6 +30,18 @@ The **Brain** (separate service) consumes `LearningEvent`s and returns `BrainDir
 
 ---
 
+## AI Teacher Rules
+
+The LLM is an invisible infrastructure layer. Learners must never know AI is involved.
+
+- **No AI mentions in the UI.** Never render the words "AI", "artificial intelligence", "Claude", or "language model" in any user-facing text — not in copy, labels, loading states, error messages, or tooltips.
+- **No branded model names.** Do not expose the model name anywhere in the UI or in network responses visible to the client beyond what is required for the API call itself.
+- **Silent degradation.** If the AI teacher call fails, fall back to showing nothing in the explanation area. Do not show an error state that references AI or the teacher system.
+- **Lesson explanations only.** The AI teacher generates feedback after question answers in regular lesson flow only — not during level review quizzes.
+- **Model:** `claude-sonnet-4-6` for all AI teacher calls.
+
+---
+
 ## Build Plan — Waves
 
 The project is built in sequential waves; items within a wave run in parallel across two tracks: **Track A** (Loop/UI) and **Track B/C** (Brain foundation and pre-user validation).
@@ -42,15 +54,15 @@ All three shared contracts agreed and codified before any UI or Brain logic is b
 - ✅ **Onboarding question set** → [`app/types/onboarding.ts`](app/types/onboarding.ts) (all question types, option sets, and composed `OnboardingAnswers` covering profile, schedule, prior knowledge, and motivation)
 - ✅ **Event taxonomy + Loop↔Brain directive contract** → [`app/types/events.ts`](app/types/events.ts) (40+ events across the full learner lifecycle: auth, onboarding, session, lesson, question, AI teacher, Brain, admin), [`app/types/brain.ts`](app/types/brain.ts) (`BrainDirective`, `BrainRequest`, `DirectiveType`, `TeachingTone`, `ExplanationDepth`, mastery scoring schema, persona shape), [`app/constants/personas.ts`](app/constants/personas.ts) (three seeded cold-start personas with onboarding answers and behavior profiles)
 
-### Wave 1 — Foundations (next)
+### Wave 1 — Foundations
 
-**Track A — Loop UI** (built against mocked Brain directives):
-- **L2** Onboarding UI — phone login, name input, settings dashboard
-- **L3** Flash-card session UI (structured question types only)
-- **L4** AI teacher integration — best available model, prompt-driven, streaming
+**Track A — Loop UI** ✅ COMPLETE (built against mocked Brain directives):
+- ✅ **L2** Onboarding UI — phone login, name input, settings dashboard
+- ✅ **L3** Flash-card session UI (structured question types only)
+- ✅ **L4** AI teacher integration — best available model, prompt-driven, streaming
 
 **Track B — Brain foundation:**
-- **B1** Learner-state schema (PostgreSQL / Prisma)
+- ✅ **B1** Learner-state schema (PostgreSQL / Prisma)
 - **B4** Event capture implementation
 
 **Track C — Pre-user validation** (fully independent of Loop UI; needs only Wave 0 outputs):
@@ -92,15 +104,6 @@ The deterministic PoC is demonstrable at the Wave 2 boundary — a complete mile
 ### Typical Workflow
 
 All branch promotions are done via pull requests on GitHub. Vercel automatically redeploys the target branch when a PR is merged.
-
----
-
-## Pull Request Rules
-
-- **400-line maximum** of code changes per PR. Files under `.planning/` and `.specify/` do not count toward this limit.
-- If a task exceeds 400 lines, split it into multiple PRs before starting -- don't discover this at commit time.
-- Documentation branches are merged directly into `develop` without a pull request.
-- Every PR must be reviewable and understandable on its own. Do not leave TODOs that span PRs without noting them explicitly.
 
 ---
 

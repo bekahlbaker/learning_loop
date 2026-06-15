@@ -156,8 +156,6 @@
   },
   "session": {
     "feedback": {
-      "correct": "Correct! Nice work.",
-      "incorrect": "Not quite — review the lesson content and try again next time.",
       "continue": "Continue"
     },
     "hint": {
