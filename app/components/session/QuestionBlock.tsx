@@ -1,6 +1,6 @@
 import MultipleChoiceQuestion from '@/app/components/session/MultipleChoiceQuestion'
 import TrueFalseQuestion from '@/app/components/session/TrueFalseQuestion'
-import type { CurriculumQuestion } from '@/app/types/curriculum'
+import type { CurriculumQuestion } from '@adaptive/shared'
 import type { ExplanationDepth } from '@adaptive/shared'
 
 export interface QuestionBlockProps {

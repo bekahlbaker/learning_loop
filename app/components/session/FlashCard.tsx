@@ -5,7 +5,7 @@ import LessonContextHeader from '@/app/components/session/LessonContextHeader'
 import LessonContentBlock from '@/app/components/session/LessonContentBlock'
 import HintReveal from '@/app/components/session/HintReveal'
 import QuestionBlock from '@/app/components/session/QuestionBlock'
-import type { CurriculumLesson } from '@/app/types/curriculum'
+import type { CurriculumLesson } from '@adaptive/shared'
 import type { BrainDirective } from '@adaptive/shared'
 
 export type FlashCardStatus = 'loading' | 'idle' | 'answered'

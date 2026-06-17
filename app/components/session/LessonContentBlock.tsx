@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import type { LessonContent } from '@/app/types/curriculum'
+import type { LessonContent } from '@adaptive/shared'
 
 export interface LessonContentBlockProps {
   content: LessonContent

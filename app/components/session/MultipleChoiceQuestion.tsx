@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import AnswerOption from '@/app/components/session/AnswerOption'
 import type { AnswerOptionState } from '@/app/components/session/AnswerOption'
-import type { MultipleChoiceQuestion as MCQ } from '@/app/types/curriculum'
+import type { MultipleChoiceQuestion as MCQ } from '@adaptive/shared'
 import type { ExplanationDepth } from '@adaptive/shared'
 
 export interface MultipleChoiceQuestionProps {

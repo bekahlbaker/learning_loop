@@ -11,8 +11,7 @@ import { useMockBrainDirective } from '@/app/hooks/useMockBrainDirective'
 import { useTeacherExplanation } from '@/app/hooks/useTeacherExplanation'
 import { useEventCapture } from '@/app/hooks/useEventCapture'
 import en from '@/app/messages/en.json'
-import type { PersonaId } from '@adaptive/shared'
-import type { Curriculum } from '@/app/types/curriculum'
+import { CURRICULUM, type PersonaId, type Curriculum } from '@adaptive/shared'
 import type { FlashCardStatus } from '@/app/components/session/FlashCard'
 
 export interface SessionOrchestratorProps {
@@ -54,44 +53,35 @@ export default function SessionOrchestrator({
   const [lastAnswer, setLastAnswer] = useState<AnswerRecord | null>(null)
 
   useEffect(() => {
-    let cancelled = false
-    import('@/app/constants/curriculum.json')
-      .then((mod) => {
-        if (cancelled) return
-        const loaded = mod.curriculum as Curriculum
-        setCurriculum(loaded)
-        setSessionState('active')
-        setFlashCardStatus('idle')
+    const loaded = CURRICULUM
+    setCurriculum(loaded)
+    setSessionState('active')
+    setFlashCardStatus('idle')
 
-        const firstLevel = loaded.levels[0]
-        const firstLesson = firstLevel?.lessons[0]
-        sessionStartAtRef.current = Date.now()
-        questionShownAtRef.current = Date.now()
+    const firstLevel = loaded.levels[0]
+    const firstLesson = firstLevel?.lessons[0]
+    sessionStartAtRef.current = Date.now()
+    questionShownAtRef.current = Date.now()
 
-        emitEvent('session_started', { resumedFromLessonId: null })
+    emitEvent('session_started', { resumedFromLessonId: null })
 
-        if (firstLevel) {
-          emitEvent('level_started', { levelId: firstLevel.id, isRestart: false })
-        }
-        if (firstLesson && firstLevel) {
-          emitEvent('lesson_started', {
-            lessonId: firstLesson.id,
-            levelId: firstLevel.id,
-            isRevisit: false,
-            directiveInEffect: directive.directiveType,
-          })
-          emitEvent('question_shown', {
-            lessonId: firstLesson.id,
-            levelId: firstLevel.id,
-            questionFormat: firstLesson.question.type,
-            attemptNumber: 1,
-          })
-        }
+    if (firstLevel) {
+      emitEvent('level_started', { levelId: firstLevel.id, isRestart: false })
+    }
+    if (firstLesson && firstLevel) {
+      emitEvent('lesson_started', {
+        lessonId: firstLesson.id,
+        levelId: firstLevel.id,
+        isRevisit: false,
+        directiveInEffect: directive.directiveType,
       })
-      .catch(() => {
-        if (!cancelled) setSessionState('error')
+      emitEvent('question_shown', {
+        lessonId: firstLesson.id,
+        levelId: firstLevel.id,
+        questionFormat: firstLesson.question.type,
+        attemptNumber: 1,
       })
-    return () => { cancelled = true }
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -313,47 +303,41 @@ export default function SessionOrchestrator({
   }
 
   const handleRetry = () => {
-    setSessionState('loading')
-    setFlashCardStatus('loading')
-    import('@/app/constants/curriculum.json')
-      .then((mod) => {
-        const loaded = mod.curriculum as Curriculum
-        setCurriculum(loaded)
-        setCurrentLevelIndex(0)
-        setCurrentLessonIndexInLevel(0)
-        setCurrentReviewQuestionIndex(0)
-        setReviewCorrectCount(0)
-        setSessionPhase('lessons')
-        setLastAnswer(null)
-        setSessionState('active')
-        setFlashCardStatus('idle')
-        lessonsAttemptedRef.current = 0
-        lessonsCompletedRef.current = 0
-        sessionStartAtRef.current = Date.now()
-        questionShownAtRef.current = Date.now()
+    const loaded = CURRICULUM
+    setCurriculum(loaded)
+    setCurrentLevelIndex(0)
+    setCurrentLessonIndexInLevel(0)
+    setCurrentReviewQuestionIndex(0)
+    setReviewCorrectCount(0)
+    setSessionPhase('lessons')
+    setLastAnswer(null)
+    setSessionState('active')
+    setFlashCardStatus('idle')
+    lessonsAttemptedRef.current = 0
+    lessonsCompletedRef.current = 0
+    sessionStartAtRef.current = Date.now()
+    questionShownAtRef.current = Date.now()
 
-        const firstLevel = loaded.levels[0]
-        const firstLesson = firstLevel?.lessons[0]
-        emitEvent('session_started', { resumedFromLessonId: null })
-        if (firstLevel) {
-          emitEvent('level_started', { levelId: firstLevel.id, isRestart: false })
-        }
-        if (firstLesson && firstLevel) {
-          emitEvent('lesson_started', {
-            lessonId: firstLesson.id,
-            levelId: firstLevel.id,
-            isRevisit: false,
-            directiveInEffect: directive.directiveType,
-          })
-          emitEvent('question_shown', {
-            lessonId: firstLesson.id,
-            levelId: firstLevel.id,
-            questionFormat: firstLesson.question.type,
-            attemptNumber: 1,
-          })
-        }
+    const firstLevel = loaded.levels[0]
+    const firstLesson = firstLevel?.lessons[0]
+    emitEvent('session_started', { resumedFromLessonId: null })
+    if (firstLevel) {
+      emitEvent('level_started', { levelId: firstLevel.id, isRestart: false })
+    }
+    if (firstLesson && firstLevel) {
+      emitEvent('lesson_started', {
+        lessonId: firstLesson.id,
+        levelId: firstLevel.id,
+        isRevisit: false,
+        directiveInEffect: directive.directiveType,
       })
-      .catch(() => setSessionState('error'))
+      emitEvent('question_shown', {
+        lessonId: firstLesson.id,
+        levelId: firstLevel.id,
+        questionFormat: firstLesson.question.type,
+        attemptNumber: 1,
+      })
+    }
   }
 
   if (sessionState === 'error') {

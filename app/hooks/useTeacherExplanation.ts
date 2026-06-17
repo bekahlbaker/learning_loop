@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import type { CurriculumLesson } from '@/app/types/curriculum'
+import type { CurriculumLesson } from '@adaptive/shared'
 import type { BrainDirective } from '@adaptive/shared'
 
 interface AnswerRecord {

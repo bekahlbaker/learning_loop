@@ -1,6 +1,6 @@
 import Button from '@/app/components/buttons/Button'
 import en from '@/app/messages/en.json'
-import type { CurriculumLevelReview } from '@/app/types/curriculum'
+import type { CurriculumLevelReview } from '@adaptive/shared'
 
 export interface LevelReviewResultProps {
   review: CurriculumLevelReview
