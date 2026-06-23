@@ -26,7 +26,6 @@ The **Brain** (separate service) consumes `LearningEvent`s and returns `BrainDir
 **Three demo personas** (same content, visibly different journeys):
 - **Experienced** (Alex Chen) — high confidence, skips ahead, brief explanations
 - **New** (Jamie Rivera) — no background, needs guidance, detailed + encouraging
-- **Disengaged** (Sam Torres) — mandatory training, rapid answers, frequent abandonment
 
 ---
 
