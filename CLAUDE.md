@@ -23,7 +23,7 @@ The **Brain** (separate service) consumes `LearningEvent`s and returns `BrainDir
 
 **Course:** Food Safety Essentials for Restaurant Staff — 3 levels, 12 lessons + 3 level reviews, aligned to the US FDA Food Code (2022). Located in [`app/constants/curriculum.json`](app/constants/curriculum.json).
 
-**Three demo personas** (same content, visibly different journeys):
+**Two demo personas** (same content, visibly different journeys):
 - **Experienced** (Alex Chen) — high confidence, skips ahead, brief explanations
 - **New** (Jamie Rivera) — no background, needs guidance, detailed + encouraging
 
